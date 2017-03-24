@@ -1,0 +1,348 @@
+package documentos;
+
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Chunk; //un párrafo puede contener muchos chunks
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Image;     //Para imagenes en el PDF
+
+//  Son importaciones para escribir y crear el PDF
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.pdf.PdfWriter;
+import java.io.FileNotFoundException;
+
+import java.io.FileOutputStream;//para establecer la ubicacion del archivo
+import javax.swing.JOptionPane;
+
+
+public class ManejadorEtiquetas {
+    private String nombreArchivo;
+    private String ubicaciónArchivo;
+
+    //objetos para crear y escribir en el PDF
+    private Document documentoPDF;
+    
+//    private PdfWriter escritor;
+
+    //Etiquetas que dan formato al documento(después de ellas hay un salto de linea)
+    public static final String[] ETIQUETAS_DOC = {"T", "P", "I", "C", "S"};
+    //Etiquetas que dan formato al texto(pueden combinarse varias, y dentro de las etiquetas
+    //que dan formato al documento y no hay salto de línea)
+    public static final String[] ETIQUETAS_FORMATO = {"b", "i", "u", "n"};
+
+    
+    
+    public void devolverTokens(String cadena) 
+            throws FileNotFoundException, DocumentException {
+        
+        //Elementos para la creacion del PDF
+        documentoPDF= new Document(); //
+
+        
+        FileOutputStream ficheroPDF= new FileOutputStream(getUbicacionArchivo());
+        
+        PdfWriter.getInstance(documentoPDF, ficheroPDF);
+        Paragraph parrafo= new Paragraph ();
+      
+        documentoPDF.open();
+        //
+        String etiquetaP, temporal="";
+        ArrayList<String> token, grupo;
+        token = new ArrayList();
+
+        StringTokenizer tokens = new StringTokenizer(cadena, "{#}\n");
+        while (tokens.hasMoreTokens()) {
+            token.add(tokens.nextToken());
+        }
+        while (!(token.isEmpty())) {
+            grupo = new ArrayList();
+            etiquetaP = token.get(0);
+            token.remove(0);            //eliminamos la etiqueta del arreglo
+            for (int i = 0; i < token.size(); ) {
+                if (token.get(i).equals(etiquetaP)) {
+                    
+                    token.remove(i);
+                    break;
+                } else if (!(" ".equals(token.get(i)))) {
+                    grupo.add(token.get(i));
+                    token.remove(i);
+                } else {
+                    token.remove(i);
+                }
+            }
+            for(int i=0; i<grupo.size(); ){
+                        temporal+= grupo.get(i)+" ";
+                        grupo.remove(i);
+                    }
+            switch (etiquetaP) {
+                case "T":
+                    documentoPDF.add(getEtiquetaT(temporal));
+                    break;
+                    
+                case "C":
+                    documentoPDF.add(getEtiquetaC(temporal));
+                    break;
+                    
+                case "S":
+                    documentoPDF.add(getEtiquetaS(temporal));
+                    break;
+                    
+                case "I":
+                    documentoPDF.add(getEtiquetaI(temporal));
+                    break;
+                case "P":
+                    grupoEtiqueta(temporal, etiquetaP); //Checamos si dentro de la etiqueta de documento
+                    //existen las etiqquetas que da formato al texto
+                    break;
+                default:
+                    break;
+            }
+//            for(int i=0; i<grupo.size();){
+//                grupo.remove(i);
+//            }
+            temporal= "";
+            
+        }
+        
+        documentoPDF.close();
+
+    }
+
+    private void grupoEtiqueta(String cadena, String grupoPertenecinete) throws DocumentException {//ese grupo siempre es {P}
+        StringTokenizer grupo= new StringTokenizer(cadena, "{#}\n ");
+        ArrayList<String> formato= new ArrayList();
+        while(grupo.hasMoreElements()){
+            formato.add(grupo.nextToken());
+        }
+
+        
+        ArrayList<String> sinFormato;
+        String mensaje="";
+        String forma= null;
+        Paragraph parrafo= new Paragraph();
+        Chunk chunkTemp;
+//
+        int contador=0; //si es =0 quiere decir que no ha encontrado ninguana sub-etiqueta
+      
+        while (formato.isEmpty()== false) {
+            for (int i = 0; i < formato.size();) {//No es necesario el incremento, en el algún momento la longitud llegará a 0, porque estamos eleiminando sus elementos
+
+                for(int etiquetas=0; etiquetas<ETIQUETAS_FORMATO.length; etiquetas++){//Compara todas las subEtiquetas
+                   if(ETIQUETAS_FORMATO[etiquetas].equals(formato.get(0))){
+                        
+                        if(!(formato.get(0).equals("n"))){
+//                            JOptionPane.showMessageDialog(null, "Llego a la condición dentro del if del for");
+                            forma=formato.get(i);
+                            contador+= 1;
+                            formato.remove(0);
+                            break;
+                        }else if(formato.get(0).equals("n")){
+                            chunkTemp= getEtiqueta_n();
+                            parrafo.add(chunkTemp);
+                            formato.remove(0);
+                            break;
+                        }
+                    }else{
+                        
+                    }
+                }
+//                JOptionPane.showMessageDialog(null, "centinela 2 :v");
+                if(!(" ".equals(formato.get(i)))) {
+                    mensaje+= formato.get(i);
+                    formato.remove(i);
+                    switch (contador) {
+                        case 0: 
+                            chunkTemp= getEtiqueta_Pp(mensaje);
+                            parrafo.add(chunkTemp);
+                            mensaje="";
+                            break;
+                        case 1:
+                            
+                            break;
+                        case 2:
+                            switch (forma){
+                                case "b":
+                                    chunkTemp= getEtiqueta_b(mensaje);
+                                    parrafo.add(chunkTemp);
+                                    mensaje="";
+                                    contador=0;
+                                    break;
+                                case "i":
+                                    chunkTemp= getEtiqueta_i(mensaje);
+                                    parrafo.add(chunkTemp);
+                                    mensaje="";
+                                    contador=0;
+                                    break;
+                                case "u":
+                                    chunkTemp= getEtiqueta_u(mensaje);
+                                    parrafo.add(chunkTemp);
+                                    mensaje="";
+                                    contador=0;
+                                    break;
+                                default:
+                            }
+                                
+                            break;
+                        default:
+                            break;
+                    }
+//                    grupo.add(grupo.get(i));
+//                    formato.remove(i);
+                } else {//si es un espacio solo lo borra
+                    formato.remove(i);
+                }
+            }
+            documentoPDF.add(parrafo);
+        }//Fin del while
+
+    }//Fin del método
+    
+    private void grupoFinal(ArrayList<String> grupo){
+        
+    }
+    
+    
+    //Utilizaremos un set para el nombre y la ubicacion, para saber donde
+    //Crearemos el PDF
+    public void setNombreArchivo(String nombreArchivo){
+        this.nombreArchivo= nombreArchivo;
+    }
+    
+    public String getNombreArchivo(){
+        return nombreArchivo;
+    }
+    
+    public void setUbicacionArchivo(String ubicacionArchivo){
+        this.ubicaciónArchivo= ubicacionArchivo;
+    }
+    
+    public String getUbicacionArchivo(){
+        return ubicaciónArchivo;
+    }
+    
+    public Paragraph getEtiquetaT(String cadena){
+        Paragraph parrafo;
+        parrafo= new Paragraph("\t\t\t\t                            "+cadena,
+            FontFactory.getFont("Arial",
+            28,
+            Font.NORMAL,
+            BaseColor.BLUE));
+        
+        return parrafo;
+    }
+    
+    public Paragraph getEtiquetaC(String cadena){
+        Paragraph parrafo;
+        parrafo= new Paragraph(cadena,
+            FontFactory.getFont("Arial",
+            22,
+            Font.NORMAL,
+            BaseColor.GREEN));
+        
+        return parrafo;
+    }
+    
+    public Paragraph getEtiquetaS(String cadena){
+        Paragraph parrafo;
+        parrafo= new Paragraph(("\t         "+cadena), //Lo mismo pero con tabulador
+            FontFactory.getFont("Arial",
+            22,
+            Font.NORMAL,
+            BaseColor.GREEN));
+        
+        return parrafo;
+    }
+    //Creará la imagen de un archivo
+    public Image getEtiquetaI(String cadena){ //esa cadena será la direccion de la imagen
+        try{
+            Image foto;
+            foto = Image.getInstance("/imagenes/pdf.png");
+            foto.scaleToFit(100, 100);
+            foto.setAlignment(Chunk.ALIGN_MIDDLE);
+            return foto;
+        }
+        catch ( Exception e ){
+            JOptionPane.showMessageDialog(null, "No se pudo abrir la imagen\nError:"
+                    +e.toString());
+            return null;
+        }
+    }
+    
+    public Paragraph getEtiquetaP(String cadena){ //sería el párrafo sin formato
+        Paragraph parrafo;
+        parrafo= new Paragraph((cadena), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.NORMAL,
+            BaseColor.BLACK));
+        
+        return parrafo;
+    }
+    
+    public Chunk getEtiqueta_b(String cadena){ //sería el párrafo sin formato
+        Chunk chunk;
+        chunk= new Chunk((cadena), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.BOLD,
+            BaseColor.BLACK));
+        
+        return chunk;
+    }
+    
+    public Chunk getEtiqueta_i(String cadena){ //sería el párrafo sin formato
+        Chunk chunk;
+        chunk= new Chunk((cadena), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.ITALIC,
+            BaseColor.BLACK));
+        
+        return chunk;
+    }
+    
+    public Chunk getEtiqueta_u(String cadena){ //sería el párrafo sin formato
+        Chunk chunk;
+        chunk= new Chunk((cadena), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.UNDERLINE,
+            BaseColor.BLACK));
+        
+        return chunk;
+    }
+    
+//    Este es un caso especial que solo proporciona un salto de línea y que no necesita línea de cierre
+    public Chunk getEtiqueta_n(){ //sería el párrafo sin formato
+        Chunk chunk;
+        
+        chunk= new Chunk(("\n"), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.NORMAL,
+            BaseColor.BLACK));
+        
+        return chunk;
+    }
+    
+    public Chunk getEtiqueta_Pp(String cadena){ //sería el párrafo sin formato
+        Chunk chunk;
+        
+        chunk= new Chunk((cadena), 
+            FontFactory.getFont("Arial",
+            12,
+            Font.NORMAL,
+            BaseColor.BLACK));
+        
+        return chunk;
+    }
+    
+    
+}//Fin de la clase Manejador etiquetas
+
+//Modulo de prueba 

@@ -1,0 +1,28 @@
+package pruebas;
+
+import java.util.StringTokenizer;
+
+
+public class TestManejadorEtiquetas {
+    
+    
+    public static void main(String[] args){
+        
+        StringTokenizer tokens= new StringTokenizer("{T} Edgar {#T} {P}{b}Guerrero{#b}{#P} ", "{#}");
+        while(tokens.hasMoreTokens()){//Si es igual a "{" 
+            //Luego de eso verificamos si es igaul a {t}
+            /*verificamos que cierre "}" y así agregaremos a la pila 
+            que el inicio de la apertura de la pila funcionará
+            http://chuwiki.chuidiang.org/index.php?title=Ejemplo_sencillo_de_creaci%C3%B3n_de_un_pdf_con_iText
+            http://felinfo.blogspot.mx/2010/01/uso-de-stringtokenizer-con-varios.html
+            
+            */
+            int i=1;
+            System.out.println("Número de tokens: "+tokens.countTokens());
+            while(tokens.hasMoreTokens()){
+                if(!(tokens.nextToken()==" "))
+                System.out.println(i+": "+ tokens.nextToken());
+            }
+        }
+    }
+}

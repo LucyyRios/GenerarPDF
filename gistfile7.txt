@@ -1,0 +1,138 @@
+package display;
+
+
+import com.itextpdf.text.DocumentException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+
+import documentos.Lector;    
+import documentos.ManejadorEtiquetas;
+import java.io.FileNotFoundException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
+public class PanelText extends JPanel {
+   
+    private JLabel etiquetaNombreA, etiquetaUbicacion;
+    private JTextField campoNombre, campoUbicacion;
+    private JButton botonAbrir;
+    private JButton botonGenerar;
+    private JTextArea areaDocText;
+    private JScrollPane scroll;
+    
+   
+    private JFileChooser selector;
+    
+   
+    
+    
+    public PanelText(){
+        setLayout(null);
+     
+        etiquetaNombreA= new JLabel("Nombre del archivo:");
+        etiquetaNombreA.setBounds(10, 10, 200, 30);
+        add(etiquetaNombreA);
+        
+        campoNombre= new JTextField("");
+        campoNombre.setToolTipText("Nombre del archivo de texto plano");
+        campoNombre.setBounds(220, 10, 200, 30);
+        campoNombre.setEditable(false);
+        add(campoNombre);
+        
+        etiquetaUbicacion= new JLabel("Ubicación del archivo:");
+        etiquetaUbicacion.setBounds(10, 50, 200, 30);
+        add(etiquetaUbicacion);
+        
+        campoUbicacion= new JTextField("");
+        campoUbicacion.setToolTipText("Ubicación del archivo de texto plano");
+        campoUbicacion.setBounds(220, 50, 200, 30);
+        campoUbicacion.setEditable(false);
+        add(campoUbicacion);
+        
+        botonGenerar= new JButton("Generar PDF");
+        botonGenerar.setToolTipText("Al dar click, se generará un pdf con el texto\n"
+                + "con el mismo nombre del archivo\n"
+                + "y en la misma ubicación");
+        botonGenerar.setBounds(450, 50, 90, 30);
+        botonGenerar.addActionListener(new HandlerBotonGenerar());
+        add(botonGenerar);
+        
+        botonAbrir= new JButton("Abrir .TXT");
+        botonAbrir.setToolTipText("Al dar click, se desplegará el explorador de archivo"
+                + " para selecionar el archivo de texto plano (.txt)");
+        botonAbrir.setBounds(450, 10, 90, 30);
+        botonAbrir.addActionListener(new HandlerBotonAbrir());
+        add(botonAbrir);
+        
+        areaDocText= new JTextArea();
+        scroll= new JScrollPane(areaDocText);
+        scroll.setBounds(10, 90, 450, 300);
+        add(scroll);
+        
+    }//Fin del constructor
+    
+    private class HandlerBotonAbrir implements ActionListener{
+        String nombreArchivo;      
+        String ubicacionArchivo;   
+        String []textoArchivo;     
+        
+        @Override
+        public void actionPerformed(ActionEvent ae) {
+            selector=new JFileChooser();
+            
+            int op=selector.showOpenDialog(null);
+            if(op==JFileChooser.APPROVE_OPTION){
+                File file1= selector.getSelectedFile();
+                nombreArchivo=selector.getName(file1);
+                ubicacionArchivo= file1.getPath();
+                
+                campoNombre.setText(nombreArchivo);
+                campoUbicacion.setText(ubicacionArchivo);
+            }
+            Lector lector1= new Lector();
+            textoArchivo= lector1.leer(ubicacionArchivo);
+            String texto= new String();
+            for(int i=0; i<textoArchivo.length; i++){
+                texto+= textoArchivo[i];
+            }
+            areaDocText.setText(texto);
+        } 
+    }
+    
+    private class HandlerBotonGenerar implements ActionListener{
+        String nombreArchivo; 
+        String ubicacionArchivo;
+        //Pra crear el archivo PDF
+        ManejadorEtiquetas gestorPdf;
+        
+        @Override
+        public void actionPerformed(ActionEvent ae) {
+            if(!(campoUbicacion.getText()==null)){
+                gestorPdf= new ManejadorEtiquetas();
+                ubicacionArchivo= campoUbicacion.getText();
+                gestorPdf.setUbicacionArchivo(ubicacionArchivo); 
+                try {
+                    gestorPdf.devolverTokens(areaDocText.getText());
+                } catch (FileNotFoundException | DocumentException ex) {
+                    JOptionPane.showMessageDialog(null, "Ubicación o archivo inválido:");
+                    Logger.getLogger(PanelText.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+            }else{
+                JOptionPane.showMessageDialog(null, "Porfavor abra"
+                        + " un archivo de texto, antes de crear un PDF");
+            }
+        }        
+    }
+    
+}
